@@ -4,11 +4,15 @@ on:
     workflow_dispatch:
         inputs:
             base_ref:
-                description: "基准仓库参考（分支/标签）"
-                default: "main"
-                required: true
+                description: "基准提交哈希"
+                required: false
+                default: ""
             compare_ref:
-                description: "比较仓库参考（分支/标签）"
+                description: "比较提交哈希"
+                required: false
+                default: ""
+            ref:
+                description: "Mierno 仓库引用（分支/标签）"
                 default: "main"
                 required: true
             force_update:
@@ -26,55 +30,54 @@ jobs:
               with:
                   path: updater-repo
                   token: ${{ secrets.MODPACK_UPDATER_TOKEN }}
-                  ref: ${{ github.event.inputs.compare_ref }}
+                  fetch-depth: 0
 
-            - name: Checkout Mierno repository at base_ref
+            - name: Checkout Mierno repository
               uses: actions/checkout@v4
               with:
                   repository: FalAut/Mierno
-                  ref: ${{ github.event.inputs.base_ref }}
+                  ref: ${{ github.event.inputs.ref }}
                   fetch-depth: 0
-                  path: mel-repo-base
+                  path: mel-repo
                   token: ${{ secrets.MODPACK_UPDATER_TOKEN }}
 
-            - name: Checkout Mierno repository at compare_ref
-              uses: actions/checkout@v4
-              with:
-                  repository: FalAut/Mierno
-                  ref: ${{ github.event.inputs.compare_ref }}
-                  fetch-depth: 0
-                  path: mel-repo-compare
-                  token: ${{ secrets.MODPACK_UPDATER_TOKEN }}
-
-            - name: Get version information
+            - name: Get versions
               id: version
+              working-directory: mel-repo
               run: |
-                  cd mel-repo-compare
-                  LATEST_VERSION=$(sed -n '/^##\s*v[0-9]/p' CHANGELOG.md | head -n1 | sed 's/^## v//')
+                  if [ "${{ github.event.inputs.base_ref }}" != "" ]; then
+                    BASE_COMMIT=${{ github.event.inputs.base_ref }}
+                  else
+                    BASE_COMMIT=$(git rev-parse HEAD^)
+                  fi
+                  COMPARE_COMMIT=${{ github.event.inputs.compare_ref }}
+                  if [ -z "$COMPARE_COMMIT" ]; then
+                    COMPARE_COMMIT=$(git rev-parse HEAD)
+                  fi
 
-                  cd ../mel-repo-base
-                  PREV_VERSION=$(sed -n '/^##\s*v[0-9]/p' CHANGELOG.md | head -n1 | sed 's/^## v//')
+                  LATEST_VERSION=$(git show $COMPARE_COMMIT:CHANGELOG.md | sed -n '/^##\s*v[0-9]/p' | head -n1 | sed 's/^## v//')
+                  PREV_VERSION=$(git show $BASE_COMMIT:CHANGELOG.md | sed -n '/^##\s*v[0-9]/p' | head -n1 | sed 's/^## v//')
 
                   echo "LATEST_VERSION=${LATEST_VERSION}" >> $GITHUB_OUTPUT
                   echo "PREV_VERSION=${PREV_VERSION}" >> $GITHUB_OUTPUT
+                  echo "BASE_COMMIT=${BASE_COMMIT}" >> $GITHUB_OUTPUT
+                  echo "COMPARE_COMMIT=${COMPARE_COMMIT}" >> $GITHUB_OUTPUT
 
-            - name: Find changed files between base_ref and compare_ref
+            - name: Find changed files
               id: changed_files
+              working-directory: mel-repo
               run: |
-                  cd mel-repo-compare
+                  BASE_REF=${{ steps.version.outputs.BASE_COMMIT }}
+                  COMPARE_REF=${{ steps.version.outputs.COMPARE_COMMIT }}
 
-                  # 获取基准提交的哈希
-                  cd ../mel-repo-base
-                  BASE_COMMIT=$(git rev-parse HEAD)
-                  cd ../mel-repo-compare
-                  COMPARE_COMMIT=$(git rev-parse HEAD)
-
-                  # 找到修改、添加和删除的文件
-                  MODIFIED_FILES=$(git diff --name-only --diff-filter=M $BASE_COMMIT $COMPARE_COMMIT | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
-                  ADDED_FILES=$(git diff --name-only --diff-filter=A $BASE_COMMIT $COMPARE_COMMIT | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
-                  DELETED_FILES=$(git diff --name-only --diff-filter=D $BASE_COMMIT $COMPARE_COMMIT | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
+                  # 查找修改和添加的文件
+                  MODIFIED_FILES=$(git diff --name-only --diff-filter=M $BASE_REF $COMPARE_REF | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
+                  ADDED_FILES=$(git diff --name-only --diff-filter=A $BASE_REF $COMPARE_REF | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
+                  # 查找删除的文件
+                  DELETED_FILES=$(git diff --name-only --diff-filter=D $BASE_REF $COMPARE_REF | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
 
                   if [ -n "$MODIFIED_FILES" ] || [ -n "$ADDED_FILES" ] || [ -n "$DELETED_FILES" ] || ${{ github.event.inputs.force_update }}; then
+                    # 保存修改和添加的文件
                     echo "modified_files<<EOF" >> $GITHUB_OUTPUT
                     echo "$MODIFIED_FILES" >> $GITHUB_OUTPUT
                     echo "EOF" >> $GITHUB_OUTPUT
@@ -83,6 +86,7 @@ jobs:
                     echo "$ADDED_FILES" >> $GITHUB_OUTPUT
                     echo "EOF" >> $GITHUB_OUTPUT
 
+                    # 保存删除的文件
                     echo "deleted_files<<EOF" >> $GITHUB_OUTPUT
                     echo "$DELETED_FILES" >> $GITHUB_OUTPUT
                     echo "EOF" >> $GITHUB_OUTPUT
@@ -95,7 +99,7 @@ jobs:
             - name: Process changed files and generate hashes
               if: steps.changed_files.outputs.changes_detected == 'true'
               run: |
-                  cd mel-repo-compare
+                  cd mel-repo
 
                   mkdir -p "../updater-repo/hotfixes/${{ steps.version.outputs.PREV_VERSION }}"
                   mkdir -p "../updater-repo/hashes/${{ steps.version.outputs.PREV_VERSION }}"
@@ -137,10 +141,10 @@ jobs:
                   fi
 
             - name: Extract changelog
-              working-directory: mel-repo-compare
+              working-directory: mel-repo
               run: |
                   mkdir -p "../updater-repo/versions/${{ steps.version.outputs.LATEST_VERSION }}"
-                  sed -n "/^## v${{ steps.version.outputs.LATEST_VERSION }}/,/^## /p" CHANGELOG.md | sed '$d' > "../updater-repo/versions/${{ steps.version.outputs.LATEST_VERSION }}/changelog.txt"
+                  git log --pretty=format:"## %s" ${{ steps.version.outputs.BASE_COMMIT }}..${{ steps.version.outputs.COMPARE_COMMIT }} > "../updater-repo/versions/${{ steps.version.outputs.LATEST_VERSION }}/changelog.txt"
 
             - name: Update meta.json
               working-directory: updater-repo
@@ -152,7 +156,7 @@ jobs:
                   TIMESTAMP=$(date +%s%3N)
                   VERSION="${{ steps.version.outputs.LATEST_VERSION }}"
 
-                  # 创建新版本条目
+                  # 创建新的版本条目
                   NEW_VERSION=$(cat <<EOF
                   {
                     "id": "$VERSION",
