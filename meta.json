@@ -11,6 +11,16 @@
         }
       },
       "updateType": "minor"
+    },
+    {
+      "id": "0.0.3",
+      "releasedAt": 1734708547482,
+      "promotions": {
+        "downloads": {
+          "generic": "https://github.com/FalAut/Mierno/releases/download/v0.0.3/Mierno-0.0.3.zip"
+        }
+      },
+      "updateType": "minor"
     }
   ]
 }
