@@ -15,10 +15,6 @@ on:
                 description: "Mierno 仓库引用（分支/标签）"
                 default: "main"
                 required: true
-            force_update:
-                description: "即使未检测到更改也强制更新"
-                type: boolean
-                default: false
 
 jobs:
     process-updates:
@@ -30,14 +26,14 @@ jobs:
               with:
                   path: updater-repo
                   token: ${{ secrets.MODPACK_UPDATER_TOKEN }}
-                  fetch-depth: 0
+                  fetch-depth: 0 # 确保获取完整历史以便后续操作
 
             - name: Checkout Mierno repository
               uses: actions/checkout@v4
               with:
                   repository: FalAut/Mierno
                   ref: ${{ github.event.inputs.ref }}
-                  fetch-depth: 0 # 获取完整历史
+                  fetch-depth: 0 # 获取完整历史以支持任意提交比较
                   path: mel-repo
                   token: ${{ secrets.MODPACK_UPDATER_TOKEN }}
 
@@ -45,11 +41,14 @@ jobs:
               id: version
               working-directory: mel-repo
               run: |
+                  # 设置基准提交
                   if [ "${{ github.event.inputs.base_ref }}" != "" ]; then
                     BASE_COMMIT=${{ github.event.inputs.base_ref }}
                   else
                     BASE_COMMIT=$(git rev-parse HEAD^)
                   fi
+
+                  # 设置比较提交
                   COMPARE_COMMIT=${{ github.event.inputs.compare_ref }}
                   if [ -z "$COMPARE_COMMIT" ]; then
                     COMPARE_COMMIT=$(git rev-parse HEAD)
@@ -65,6 +64,13 @@ jobs:
                   echo "BASE_COMMIT=${BASE_COMMIT}" >> $GITHUB_OUTPUT
                   echo "COMPARE_COMMIT=${COMPARE_COMMIT}" >> $GITHUB_OUTPUT
 
+            - name: Debug version variables
+              run: |
+                  echo "PREV_VERSION: ${{ steps.version.outputs.PREV_VERSION }}"
+                  echo "LATEST_VERSION: ${{ steps.version.outputs.LATEST_VERSION }}"
+                  echo "BASE_COMMIT: ${{ steps.version.outputs.BASE_COMMIT }}"
+                  echo "COMPARE_COMMIT: ${{ steps.version.outputs.COMPARE_COMMIT }}"
+
             - name: Find changed files
               id: changed_files
               working-directory: mel-repo
@@ -78,7 +84,7 @@ jobs:
                   # 查找删除的文件
                   DELETED_FILES=$(git diff --name-only --diff-filter=D $BASE_REF $COMPARE_REF | grep -E "^(config|defaultconfigs|hotai|kubejs|ldlib)/" || true)
 
-                  if [ -n "$MODIFIED_FILES" ] || [ -n "$ADDED_FILES" ] || [ -n "$DELETED_FILES" ] || ${{ github.event.inputs.force_update }}; then
+                  if [ -n "$MODIFIED_FILES" ] || [ -n "$ADDED_FILES" ] || [ -n "$DELETED_FILES" ]; then
                     # 保存修改和添加的文件
                     echo "modified_files<<EOF" >> $GITHUB_OUTPUT
                     echo "$MODIFIED_FILES" >> $GITHUB_OUTPUT
@@ -146,7 +152,7 @@ jobs:
               working-directory: mel-repo
               run: |
                   mkdir -p "../updater-repo/versions/${{ steps.version.outputs.LATEST_VERSION }}"
-                  git log --pretty=format:"## %s" ${{ steps.version.outputs.BASE_COMMIT }}..${{ steps.version.outputs.COMPARE_COMMIT }} > "../updater-repo/versions/${{ steps.version.outputs.LATEST_VERSION }}/changelog.txt"
+                  sed -n "/^## v${{ steps.version.outputs.LATEST_VERSION }}/,/^## /p" CHANGELOG.md | sed '$d' > "../updater-repo/versions/${{ steps.version.outputs.LATEST_VERSION }}/changelog.txt"
 
             - name: Update meta.json
               working-directory: updater-repo
