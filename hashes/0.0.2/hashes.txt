@@ -1,1 +1,0 @@
-config/ftbquests/quests/chapters/chapter1-2.snbt|96a2ec5d0a79b7eef7bc6240141db0ac272cb99f52ba96b59e7efe56cbbde0ed
