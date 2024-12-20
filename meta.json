@@ -1,5 +1,16 @@
 {
-    "schemaVersion": 1,
-    "hotfixesFormat": null,
-    "versions": []
+  "schemaVersion": 1,
+  "hotfixesFormat": null,
+  "versions": [
+    {
+      "id": "0.0.3",
+      "releasedAt": 1734710157047,
+      "promotions": {
+        "downloads": {
+          "generic": "https://github.com/FalAut/Mierno/releases/download/v0.0.3/Mierno-0.0.3.zip"
+        }
+      },
+      "updateType": "minor"
+    }
+  ]
 }

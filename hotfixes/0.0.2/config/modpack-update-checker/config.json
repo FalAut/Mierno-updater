@@ -1,0 +1,15 @@
+{
+    "schemaVersion": 9,
+    "currentVersion": "0.0.3",
+    "modpackName": "Mierno",
+    "modpackAuthor": "落秋FalAut",
+    "modpackReleaseType": "beta",
+    "updateCheckerId": "https://ghgo.xyz/https://raw.githubusercontent.com/FalAut/Mierno-updater/main/",
+    "advanced": {
+        "expandButton": true,
+        "updateCheckerType": 2,
+        "buttonXOffset": 24,
+        "buttonYOffset": -24,
+        "forceModpackCompatible": true
+    }
+}
