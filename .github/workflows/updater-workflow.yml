@@ -4,11 +4,11 @@ on:
     workflow_dispatch:
         inputs:
             base_ref:
-                description: "基准提交哈希"
+                description: "基准提交哈希（例如 dd022dc）"
                 required: false
                 default: ""
             compare_ref:
-                description: "比较提交哈希"
+                description: "比较提交哈希（例如 a8db7ca）"
                 required: false
                 default: ""
             ref:
@@ -37,7 +37,7 @@ jobs:
               with:
                   repository: FalAut/Mierno
                   ref: ${{ github.event.inputs.ref }}
-                  fetch-depth: 0
+                  fetch-depth: 0 # 获取完整历史
                   path: mel-repo
                   token: ${{ secrets.MODPACK_UPDATER_TOKEN }}
 
@@ -55,8 +55,10 @@ jobs:
                     COMPARE_COMMIT=$(git rev-parse HEAD)
                   fi
 
-                  LATEST_VERSION=$(git show $COMPARE_COMMIT:CHANGELOG.md | sed -n '/^##\s*v[0-9]/p' | head -n1 | sed 's/^## v//')
+                  # 提取基准提交的版本
                   PREV_VERSION=$(git show $BASE_COMMIT:CHANGELOG.md | sed -n '/^##\s*v[0-9]/p' | head -n1 | sed 's/^## v//')
+                  # 提取比较提交的版本
+                  LATEST_VERSION=$(git show $COMPARE_COMMIT:CHANGELOG.md | sed -n '/^##\s*v[0-9]/p' | head -n1 | sed 's/^## v//')
 
                   echo "LATEST_VERSION=${LATEST_VERSION}" >> $GITHUB_OUTPUT
                   echo "PREV_VERSION=${PREV_VERSION}" >> $GITHUB_OUTPUT
