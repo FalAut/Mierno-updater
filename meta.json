@@ -1,16 +1,26 @@
 {
-    "schemaVersion": 1,
-    "hotfixesFormat": null,
-    "versions": [
-        {
-            "id": "0.0.2",
-            "releasedAt": 1734670630927,
-            "promotions": {
-                "downloads": {
-                    "generic": "https://github.com/FalAut/Mierno/releases/download/v0.0.2/Mierno-0.0.2.zip"
-                }
-            },
-            "updateType": "minor"
+  "schemaVersion": 1,
+  "hotfixesFormat": null,
+  "versions": [
+    {
+      "id": "0.0.2",
+      "releasedAt": 1734670630927,
+      "promotions": {
+        "downloads": {
+          "generic": "https://github.com/FalAut/Mierno/releases/download/v0.0.2/Mierno-0.0.2.zip"
         }
-    ]
+      },
+      "updateType": "minor"
+    },
+    {
+      "id": "0.0.3",
+      "releasedAt": 1734709199834,
+      "promotions": {
+        "downloads": {
+          "generic": "https://github.com/FalAut/Mierno/releases/download/v0.0.3/Mierno-0.0.3.zip"
+        }
+      },
+      "updateType": "minor"
+    }
+  ]
 }

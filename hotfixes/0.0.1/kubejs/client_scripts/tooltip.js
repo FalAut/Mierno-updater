@@ -94,4 +94,13 @@ ItemEvents.tooltip((event) => {
     event.add("mierno:colorless_gem", Text.translate("tooltip.mierno.colorless_gem").gold());
     event.add("mierno:unstable_ingot", Text.translate("tooltip.mierno.unstable_ingot").gold());
     event.add("mierno:unstable_singularity", Text.translate("tooltip.mierno.unstable_singularity").gold());
+    event.add("mierno:source_fluidlink", [
+        Text.translate("tooltip.mierno.source_fluidlink_1").gold(),
+        Text.translate("tooltip.mierno.source_fluidlink_2").gold(),
+    ]);
+    event.add("wizards_reborn:orbital_fluid_retainer", [
+        Text.translate("tooltip.mierno.orbital_fluid_retainer_1").gold(),
+        Text.translate("tooltip.mierno.orbital_fluid_retainer_2").gold(),
+    ]);
+    event.add("ars_nouveau:source_jar", Text.translate("tooltip.mierno.source_jar").gold());
 });
