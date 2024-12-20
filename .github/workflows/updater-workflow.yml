@@ -4,11 +4,11 @@ on:
     workflow_dispatch:
         inputs:
             base_ref:
-                description: "基准提交哈希（例如 dd022dc）"
+                description: "基准提交哈希"
                 required: false
                 default: ""
             compare_ref:
-                description: "比较提交哈希（例如 a8db7ca）"
+                description: "比较提交哈希"
                 required: false
                 default: ""
             ref:
